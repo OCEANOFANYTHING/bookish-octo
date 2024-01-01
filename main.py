@@ -6,6 +6,14 @@ import subprocess  # Better for executing commands than os.system
 # Get the year as input
 year = int(input("Enter the year: "))
 
+# Get GitHub email and name for proper attribution
+github_email = input("Enter your GitHub email address: ")
+github_name = input("Enter your GitHub username: ")
+
+# Configure Git with the provided credentials for this repository
+subprocess.run(["git", "config", "user.email", github_email], check=True)
+subprocess.run(["git", "config", "user.name", github_name], check=True)
+
 # Ensure the file exists
 if not os.path.exists("file.txt"):
     with open("file.txt", "w") as f:
@@ -47,8 +55,13 @@ for date in dates:
         subprocess.run(git_add, check=True)
         
         try:
-            commit_command = ["git", "commit", f"--date={date_str}", "-m", f"commit-{date_str}-{i+1}"]
-            subprocess.run(commit_command, check=True)
+            # Use GIT_AUTHOR_DATE and GIT_COMMITTER_DATE environment variables for better compatibility
+            env = os.environ.copy()
+            env['GIT_AUTHOR_DATE'] = f"{date_str}T12:00:00"
+            env['GIT_COMMITTER_DATE'] = f"{date_str}T12:00:00"
+            
+            commit_command = ["git", "commit", "-m", f"commit-{date_str}-{i+1}"]
+            subprocess.run(commit_command, env=env, check=True)
             total_commits += 1
         except subprocess.CalledProcessError:
             print(f"Warning: Commit failed for {date_str}-{i+1}, continuing with next commit")
@@ -57,7 +70,12 @@ for date in dates:
 # Push the commits to the remote repository
 print(f"Pushing {total_commits} commits to remote repository...")
 try:
-    subprocess.run(["git", "push", "origin", "main"], check=True)
+    subprocess.run(["git", "push", "-f", "origin", "main"], check=True)
     print(f"Successfully made {total_commits} commits for all days in {year}")
 except subprocess.CalledProcessError:
-    print("Push failed. You may need to push manually.")
+    print("Push failed. You may need to push manually with 'git push -f origin main'")
+
+print("\nIMPORTANT: For commits to show in your GitHub contribution graph:")
+print("1. Make sure you used the same email address associated with your GitHub account")
+print("2. Verify the repository is public on GitHub")
+print("3. Check that you're pushing to the default branch (main or master)")
