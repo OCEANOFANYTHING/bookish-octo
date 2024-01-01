@@ -26,33 +26,38 @@ for _ in range(days_in_year):
     dates.append(current_date)
     current_date += datetime.timedelta(days=1)
 
-# Batch file writes for better performance
-with open("file.txt", "a") as f:
-    for date in dates:
-        # Generate a random number of commits between 50 and 90
-        num_commits = random.randint(50, 90)
+total_commits = 0
+
+# Process each day
+for date in dates:
+    # Generate a random number of commits between 50 and 90
+    num_commits = random.randint(50, 90)
+    
+    print(f"{date.strftime('%Y-%m-%d')}: Making {num_commits} commits")
+    
+    date_str = date.strftime('%Y-%m-%d')
+    
+    # Make unique changes and commits for each commit in the day
+    for i in range(num_commits):
+        # Write unique content for each commit
+        with open("file.txt", "a") as f:
+            f.write(f"{date_str}-commit-{i+1}\n")
         
-        print(f"{date.strftime('%Y-%m-%d')}: Making {num_commits} commits")
-        
-        date_str = date.strftime('%Y-%m-%d')
-        
-        # Write all dates for this day at once
-        for _ in range(num_commits):
-            f.write(date_str + '\n')
-        
-        # Flush to ensure content is written
-        f.flush()
-        
-        # Git operations - only add once per day
+        # Add and commit
         subprocess.run(git_add, check=True)
         
-        # Make all commits for the day
-        for _ in range(num_commits):
-            commit_command = ["git", "commit", f"--date={date_str}", "-m", "commit"]
+        try:
+            commit_command = ["git", "commit", f"--date={date_str}", "-m", f"commit-{date_str}-{i+1}"]
             subprocess.run(commit_command, check=True)
+            total_commits += 1
+        except subprocess.CalledProcessError:
+            print(f"Warning: Commit failed for {date_str}-{i+1}, continuing with next commit")
+            continue
 
 # Push the commits to the remote repository
-print("Pushing commits to remote repository...")
-subprocess.run(["git", "push", "origin", "main"], check=True)
-
-print(f"Successfully made commits for all days in {year}")
+print(f"Pushing {total_commits} commits to remote repository...")
+try:
+    subprocess.run(["git", "push", "origin", "main"], check=True)
+    print(f"Successfully made {total_commits} commits for all days in {year}")
+except subprocess.CalledProcessError:
+    print("Push failed. You may need to push manually.")
