@@ -3,7 +3,8 @@ import datetime
 import random  # Added import for randomization
 
 # Get the current year
-current_year = datetime.datetime.now().year
+# current_year = datetime.datetime.now().year
+current_year = 2024
 
 # Get the month as input
 month = int(input("Enter the month (1-12): "))
