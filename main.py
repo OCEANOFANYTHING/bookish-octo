@@ -1,81 +1,43 @@
 import os
 import datetime
-import random
-import subprocess  # Better for executing commands than os.system
+import random  # Added import for randomization
 
-# Get the year as input
-year = int(input("Enter the year: "))
+# Get the current year
+# current_year = datetime.datetime.now().year
+current_year = 2024
 
-# Get GitHub email and name for proper attribution
-github_email = input("Enter your GitHub email address: ")
-github_name = input("Enter your GitHub username: ")
+# Get the month as input
+month = int(input("Enter the month (1-12): "))
 
-# Configure Git with the provided credentials for this repository
-subprocess.run(["git", "config", "user.email", github_email], check=True)
-subprocess.run(["git", "config", "user.name", github_name], check=True)
+# Check if the month is valid
+if month < 1 or month > 12:
+    print("Invalid month. Please enter a number between 1 and 12.")
+    exit()
+
+# Calculate the number of days in the given month
+days_in_month = (datetime.date(current_year, month, 1) + datetime.timedelta(days=32)).replace(day=1) - datetime.timedelta(days=1)
+num_days = days_in_month.day
 
 # Ensure the file exists
 if not os.path.exists("file.txt"):
     with open("file.txt", "w") as f:
-        pass  # Empty write is faster than writing an empty string
+        f.write("")
 
-# Prepare git commands - using subprocess with shell=False is safer and faster
-git_add = ["git", "add", "."]
-
-# Precompute date ranges for the entire year
-days_in_year = 366 if ((year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)) else 365
-
-print(f"Making commits for all {days_in_year} days of {year}...")
-
-# Build all the dates at once for efficiency
-dates = []
-current_date = datetime.date(year, 1, 1)
-for _ in range(days_in_year):
-    dates.append(current_date)
-    current_date += datetime.timedelta(days=1)
-
-total_commits = 0
-
-# Process each day
-for date in dates:
-    # Generate a random number of commits between 50 and 90
-    num_commits = random.randint(50, 90)
+# Perform random number of commits for each day of the month (minimum 50)
+for day in range(1, num_days + 1):
+    # Generate a random number of commits between 50 and a random max (between 60 and 100)
+    max_commits = random.randint(60, 100)
+    num_commits = random.randint(50, max_commits)
     
-    print(f"{date.strftime('%Y-%m-%d')}: Making {num_commits} commits")
+    print(f"Day {day}: Making {num_commits} commits")
     
-    date_str = date.strftime('%Y-%m-%d')
-    
-    # Make unique changes and commits for each commit in the day
-    for i in range(num_commits):
-        # Write unique content for each commit
+    for _ in range(num_commits):
+        date_str = f"{current_year}-{month:02d}-{day:02d}"
         with open("file.txt", "a") as f:
-            f.write(f"{date_str}-commit-{i+1}\n")
-        
-        # Add and commit
-        subprocess.run(git_add, check=True)
-        
-        try:
-            # Use GIT_AUTHOR_DATE and GIT_COMMITTER_DATE environment variables for better compatibility
-            env = os.environ.copy()
-            env['GIT_AUTHOR_DATE'] = f"{date_str}T12:00:00"
-            env['GIT_COMMITTER_DATE'] = f"{date_str}T12:00:00"
-            
-            commit_command = ["git", "commit", "-m", f"commit-{date_str}-{i+1}"]
-            subprocess.run(commit_command, env=env, check=True)
-            total_commits += 1
-        except subprocess.CalledProcessError:
-            print(f"Warning: Commit failed for {date_str}-{i+1}, continuing with next commit")
-            continue
+            f.write(date_str + '\n')
+        os.system("git add .")
+        commit_command = f"git commit --date=\"{date_str}\" -m 'commit'"
+        os.system(commit_command)
 
 # Push the commits to the remote repository
-print(f"Pushing {total_commits} commits to remote repository...")
-try:
-    subprocess.run(["git", "push", "-f", "origin", "main"], check=True)
-    print(f"Successfully made {total_commits} commits for all days in {year}")
-except subprocess.CalledProcessError:
-    print("Push failed. You may need to push manually with 'git push -f origin main'")
-
-print("\nIMPORTANT: For commits to show in your GitHub contribution graph:")
-print("1. Make sure you used the same email address associated with your GitHub account")
-print("2. Verify the repository is public on GitHub")
-print("3. Check that you're pushing to the default branch (main or master)")
+os.system("git push origin main")
