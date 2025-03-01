@@ -1,24 +1,6 @@
-# import os
-# import random
-
-# if not os.path.exists("file.txt"):
-#     with open("file.txt", "w") as f:
-#         f.write("")
-
-# for i in range(1, 800):
-#     for j in range(0, random.randint(1, 10)):
-#         d = str(i) + ' days ago'
-#         with open("file.txt", "a") as f:
-#             f.write(d + '\n')
-#         os.system("git add .")
-#         commit_command = f"git commit --date=\"{d}\" -m 'commit'"
-#         os.system(commit_command)
-
-# os.system("git push origin main")
-
-
 import os
 import datetime
+import random  # Added import for randomization
 
 # Get the current year
 current_year = datetime.datetime.now().year
@@ -40,9 +22,15 @@ if not os.path.exists("file.txt"):
     with open("file.txt", "w") as f:
         f.write("")
 
-# Perform 20 commits for each day of the month
+# Perform random number of commits for each day of the month (minimum 50)
 for day in range(1, num_days + 1):
-    for _ in range(20):
+    # Generate a random number of commits between 50 and a random max (between 60 and 100)
+    max_commits = random.randint(60, 100)
+    num_commits = random.randint(50, max_commits)
+    
+    print(f"Day {day}: Making {num_commits} commits")
+    
+    for _ in range(num_commits):
         date_str = f"{current_year}-{month:02d}-{day:02d}"
         with open("file.txt", "a") as f:
             f.write(date_str + '\n')
