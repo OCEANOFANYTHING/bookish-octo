@@ -1,43 +1,58 @@
 import os
 import datetime
-import random  # Added import for randomization
+import random
+import subprocess  # Better for executing commands than os.system
 
-# Get the current year
-# current_year = datetime.datetime.now().year
-current_year = 2024
-
-# Get the month as input
-month = int(input("Enter the month (1-12): "))
-
-# Check if the month is valid
-if month < 1 or month > 12:
-    print("Invalid month. Please enter a number between 1 and 12.")
-    exit()
-
-# Calculate the number of days in the given month
-days_in_month = (datetime.date(current_year, month, 1) + datetime.timedelta(days=32)).replace(day=1) - datetime.timedelta(days=1)
-num_days = days_in_month.day
+# Get the year as input
+year = int(input("Enter the year: "))
 
 # Ensure the file exists
 if not os.path.exists("file.txt"):
     with open("file.txt", "w") as f:
-        f.write("")
+        pass  # Empty write is faster than writing an empty string
 
-# Perform random number of commits for each day of the month (minimum 50)
-for day in range(1, num_days + 1):
-    # Generate a random number of commits between 50 and a random max (between 60 and 100)
-    max_commits = random.randint(60, 100)
-    num_commits = random.randint(50, max_commits)
-    
-    print(f"Day {day}: Making {num_commits} commits")
-    
-    for _ in range(num_commits):
-        date_str = f"{current_year}-{month:02d}-{day:02d}"
-        with open("file.txt", "a") as f:
+# Prepare git commands - using subprocess with shell=False is safer and faster
+git_add = ["git", "add", "."]
+
+# Precompute date ranges for the entire year
+days_in_year = 366 if ((year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)) else 365
+
+print(f"Making commits for all {days_in_year} days of {year}...")
+
+# Build all the dates at once for efficiency
+dates = []
+current_date = datetime.date(year, 1, 1)
+for _ in range(days_in_year):
+    dates.append(current_date)
+    current_date += datetime.timedelta(days=1)
+
+# Batch file writes for better performance
+with open("file.txt", "a") as f:
+    for date in dates:
+        # Generate a random number of commits between 50 and 90
+        num_commits = random.randint(50, 90)
+        
+        print(f"{date.strftime('%Y-%m-%d')}: Making {num_commits} commits")
+        
+        date_str = date.strftime('%Y-%m-%d')
+        
+        # Write all dates for this day at once
+        for _ in range(num_commits):
             f.write(date_str + '\n')
-        os.system("git add .")
-        commit_command = f"git commit --date=\"{date_str}\" -m 'commit'"
-        os.system(commit_command)
+        
+        # Flush to ensure content is written
+        f.flush()
+        
+        # Git operations - only add once per day
+        subprocess.run(git_add, check=True)
+        
+        # Make all commits for the day
+        for _ in range(num_commits):
+            commit_command = ["git", "commit", f"--date={date_str}", "-m", "commit"]
+            subprocess.run(commit_command, check=True)
 
 # Push the commits to the remote repository
-os.system("git push origin main")
+print("Pushing commits to remote repository...")
+subprocess.run(["git", "push", "origin", "main"], check=True)
+
+print(f"Successfully made commits for all days in {year}")
